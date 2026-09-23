@@ -171,36 +171,34 @@ class SendLocationDialogState extends State<SendLocationDialog> {
       content: Column(
         mainAxisSize: .min,
         children: [
-          ConstrainedBox(
-            constraints: BoxConstraints.loose(const Size(400, 400)),
-            child: AspectRatio(
-              aspectRatio: 1,
-              child: Stack(
-                children: [
-                  FlutterMap(
-                    mapController: mapController,
-                    options: MapOptions(
-                      initialCenter: const LatLng(0, 0),
-                      initialZoom: 1,
-                      onMapReady: onMapReady,
-                      onPositionChanged: onPositionChanged,
-                    ),
-                    children: const [OpenStreetMapTileLayer()],
+          SizedBox(
+            width: 400,
+            height: 400,
+            child: Stack(
+              children: [
+                FlutterMap(
+                  mapController: mapController,
+                  options: MapOptions(
+                    initialCenter: const LatLng(0, 0),
+                    initialZoom: 1,
+                    onMapReady: onMapReady,
+                    onPositionChanged: onPositionChanged,
                   ),
-                  const IgnorePointer(child: Center(child: LocationPinIcon())),
-                  const OpenStreetMapAttribution(),
-                  if (position != null)
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: IconButton.filledTonal(
-                        tooltip: l10n.myLocation,
-                        onPressed: pinMoved ? moveToPosition : null,
-                        icon: const Icon(Icons.my_location_outlined),
-                      ),
+                  children: const [OpenStreetMapTileLayer()],
+                ),
+                const IgnorePointer(child: Center(child: LocationPin())),
+                const OpenStreetMapAttribution(),
+                if (position != null)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: IconButton.filledTonal(
+                      tooltip: l10n.myLocation,
+                      onPressed: pinMoved ? moveToPosition : null,
+                      icon: const Icon(Icons.my_location_outlined),
                     ),
-                ],
-              ),
+                  ),
+              ],
             ),
           ),
           const SizedBox(height: 12),

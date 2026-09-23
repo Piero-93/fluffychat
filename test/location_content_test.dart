@@ -80,6 +80,21 @@ void main() {
     });
   });
 
+  group('getLocationAssetType', () {
+    test('reads the MSC3488 asset type', () {
+      expect(
+        getLocationAssetType({
+          LocationContentKeys.asset: {'type': LocationAssetTypes.pin},
+        }),
+        LocationAssetTypes.pin,
+      );
+    });
+
+    test('defaults to m.self', () {
+      expect(getLocationAssetType({'geo_uri': 'geo:1,2'}), 'm.self');
+    });
+  });
+
   test('buildLocationContent contains legacy and MSC3488 fields', () {
     final timestamp = DateTime.fromMillisecondsSinceEpoch(1636829458432);
     final content = buildLocationContent(

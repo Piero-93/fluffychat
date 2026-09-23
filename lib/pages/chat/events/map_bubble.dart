@@ -4,6 +4,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import 'package:fluffychat/l10n/l10n.dart';
+import 'package:fluffychat/widgets/avatar.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:material_ui/material_ui.dart';
@@ -18,6 +19,7 @@ class MapBubble extends StatelessWidget {
   final double height;
   final double radius;
   final VoidCallback? onTap;
+  final Widget marker;
 
   const MapBubble({
     required this.latitude,
@@ -27,6 +29,7 @@ class MapBubble extends StatelessWidget {
     this.height = 400,
     this.radius = 10.0,
     this.onTap,
+    this.marker = const LocationPin(),
     super.key,
   });
 
@@ -50,9 +53,9 @@ class MapBubble extends StatelessWidget {
                   markers: [
                     Marker(
                       point: LatLng(latitude, longitude),
-                      width: 30,
-                      height: 30,
-                      child: const LocationPinIcon(),
+                      width: LocationPin.size,
+                      height: LocationPin.size,
+                      child: marker,
                     ),
                   ],
                 ),
@@ -106,16 +109,73 @@ class OpenStreetMapAttribution extends StatelessWidget {
   }
 }
 
-class LocationPinIcon extends StatelessWidget {
-  const LocationPinIcon({super.key});
+class LocationPin extends StatelessWidget {
+  static const double size = 48;
+
+  final Uri? avatarUrl;
+  final String? avatarName;
+
+  const LocationPin({super.key}) : avatarUrl = null, avatarName = null;
+
+  const LocationPin.avatar({
+    required this.avatarUrl,
+    required String this.avatarName,
+    super.key,
+  });
 
   @override
-  Widget build(BuildContext context) => Transform.translate(
-    // No idea why the offset has to be like this, instead of -15
-    // It has been determined by trying out, though, that this yields
-    // the tip of the location pin to be static when zooming.
-    // Might have to do with psychological perception of where the tip exactly is
-    offset: const Offset(0, -12.5),
-    child: const Icon(Icons.location_pin, color: Colors.red, size: 30),
-  );
+  Widget build(BuildContext context) {
+    final avatarName = this.avatarName;
+    final color = Theme.of(context).colorScheme.primary;
+    return Transform.translate(
+      // The tip of the Material location_pin glyph is at 22/24 of its height,
+      // so it is moved up by 10/24 to point at the center of the marker
+      offset: const Offset(0, -size * 10 / 24),
+      child: SizedBox.square(
+        dimension: size,
+        child: Stack(
+          alignment: Alignment.topCenter,
+          children: [
+            Icon(
+              Icons.location_pin,
+              color: color,
+              size: size,
+              shadows: const [
+                Shadow(
+                  color: Colors.black54,
+                  blurRadius: 4,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+            if (avatarName != null)
+              // The head of the glyph is a circle centered at 9/24 with a
+              // radius of 7/24
+              Positioned(
+                top: size * 9 / 24 - _avatarSize / 2,
+                child: Container(
+                  foregroundDecoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Color.lerp(color, Colors.black, 0.3)!,
+                    ),
+                    gradient: const RadialGradient(
+                      colors: [Colors.transparent, Colors.black26],
+                      stops: [0.8, 1],
+                    ),
+                  ),
+                  child: Avatar(
+                    mxContent: avatarUrl,
+                    name: avatarName,
+                    size: _avatarSize,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static const double _avatarSize = size * 11 / 24;
 }
