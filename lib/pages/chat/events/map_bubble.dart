@@ -10,6 +10,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../config/app_config.dart';
+import '../../../utils/platform_infos.dart';
 
 class MapBubble extends StatelessWidget {
   final double latitude;
@@ -110,7 +111,7 @@ class OpenStreetMapAttribution extends StatelessWidget {
 }
 
 class LocationPin extends StatelessWidget {
-  static const double size = 48;
+  static double get size => PlatformInfos.isMobile ? 48 : 64;
 
   final Uri? avatarUrl;
   final String? avatarName;
@@ -130,7 +131,7 @@ class LocationPin extends StatelessWidget {
     return Transform.translate(
       // The tip of the Material location_pin glyph is at 22/24 of its height,
       // so it is moved up by 10/24 to point at the center of the marker
-      offset: const Offset(0, -size * 10 / 24),
+      offset: Offset(0, -size * 10 / 24),
       child: SizedBox.square(
         dimension: size,
         child: Stack(
@@ -177,5 +178,5 @@ class LocationPin extends StatelessWidget {
     );
   }
 
-  static const double _avatarSize = size * 11 / 24;
+  static double get _avatarSize => size * 13 / 24;
 }
