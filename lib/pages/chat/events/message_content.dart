@@ -136,10 +136,19 @@ class MessageContent extends StatelessWidget {
             final geoUriString = getLocationGeoUri(event.content);
             final geoUri = GeoUri.tryParse(geoUriString);
             if (geoUri != null) {
+              final sender = event.senderFromMemoryOrFallback;
               return MapBubble(
                 onTap: () => UrlLauncher(context, geoUriString).launchUrl(),
                 latitude: geoUri.latitude,
                 longitude: geoUri.longitude,
+                marker:
+                    getLocationAssetType(event.content) ==
+                        LocationAssetTypes.pin
+                    ? const LocationPin()
+                    : LocationPin.avatar(
+                        avatarUrl: sender.avatarUrl,
+                        avatarName: sender.calcDisplayname(),
+                      ),
               );
             }
             continue textmessage;

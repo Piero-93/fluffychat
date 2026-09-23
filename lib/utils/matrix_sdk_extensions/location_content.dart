@@ -67,6 +67,13 @@ String? getLocationGeoUri(Map<String, Object?> content) =>
         .tryGetMap<String, Object?>(LocationContentKeys.location)
         ?.tryGet<String>('uri');
 
+/// MSC3488 defines `m.self` as default when no asset type is given.
+String getLocationAssetType(Map<String, Object?> content) =>
+    content
+        .tryGetMap<String, Object?>(LocationContentKeys.asset)
+        ?.tryGet<String>('type') ??
+    LocationAssetTypes.self;
+
 Map<String, Object?> buildLocationContent({
   required GeoUri geoUri,
   required String assetType,
