@@ -32,8 +32,6 @@ class MapBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Container(
       constraints: BoxConstraints.loose(Size(width, height)),
       child: AspectRatio(
@@ -46,14 +44,7 @@ class MapBubble extends StatelessWidget {
                 initialZoom: zoom,
               ),
               children: [
-                TileLayer(
-                  maxZoom: 20,
-                  minZoom: 0,
-                  urlTemplate:
-                      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  userAgentPackageName: AppConfig.appId,
-                  subdomains: const ['a', 'b', 'c'],
-                ),
+                const OpenStreetMapTileLayer(),
                 MarkerLayer(
                   rotate: true,
                   markers: [
@@ -61,35 +52,13 @@ class MapBubble extends StatelessWidget {
                       point: LatLng(latitude, longitude),
                       width: 30,
                       height: 30,
-                      child: Transform.translate(
-                        // No idea why the offset has to be like this, instead of -15
-                        // It has been determined by trying out, though, that this yields
-                        // the tip of the location pin to be static when zooming.
-                        // Might have to do with psychological perception of where the tip exactly is
-                        offset: const Offset(0, -12.5),
-                        child: const Icon(
-                          Icons.location_pin,
-                          color: Colors.red,
-                          size: 30,
-                        ),
-                      ),
+                      child: const LocationPinIcon(),
                     ),
                   ],
                 ),
               ],
             ),
-            Container(
-              alignment: Alignment.bottomRight,
-              child: Text(
-                ' © OpenStreetMap contributors ',
-                style: TextStyle(
-                  color: theme.brightness == Brightness.dark
-                      ? Colors.white
-                      : Colors.black,
-                  backgroundColor: theme.appBarTheme.backgroundColor,
-                ),
-              ),
-            ),
+            const OpenStreetMapAttribution(),
             Material(
               color: Colors.transparent,
               child: Tooltip(
@@ -102,4 +71,51 @@ class MapBubble extends StatelessWidget {
       ),
     );
   }
+}
+
+class OpenStreetMapTileLayer extends StatelessWidget {
+  const OpenStreetMapTileLayer({super.key});
+
+  @override
+  Widget build(BuildContext context) => TileLayer(
+    maxZoom: 20,
+    minZoom: 0,
+    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    userAgentPackageName: AppConfig.appId,
+  );
+}
+
+class OpenStreetMapAttribution extends StatelessWidget {
+  const OpenStreetMapAttribution({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      alignment: Alignment.bottomRight,
+      child: Text(
+        ' © OpenStreetMap contributors ',
+        style: TextStyle(
+          color: theme.brightness == Brightness.dark
+              ? Colors.white
+              : Colors.black,
+          backgroundColor: theme.appBarTheme.backgroundColor,
+        ),
+      ),
+    );
+  }
+}
+
+class LocationPinIcon extends StatelessWidget {
+  const LocationPinIcon({super.key});
+
+  @override
+  Widget build(BuildContext context) => Transform.translate(
+    // No idea why the offset has to be like this, instead of -15
+    // It has been determined by trying out, though, that this yields
+    // the tip of the location pin to be static when zooming.
+    // Might have to do with psychological perception of where the tip exactly is
+    offset: const Offset(0, -12.5),
+    child: const Icon(Icons.location_pin, color: Colors.red, size: 30),
+  );
 }
