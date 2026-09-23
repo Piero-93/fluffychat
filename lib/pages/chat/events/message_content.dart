@@ -15,6 +15,7 @@ import 'package:matrix/matrix.dart';
 
 import '../../../config/app_config.dart';
 import '../../../utils/event_checkbox_extension.dart';
+import '../../../utils/matrix_sdk_extensions/location_content.dart';
 import '../../../utils/platform_infos.dart';
 import '../../../utils/url_launcher.dart';
 import 'audio_player.dart';
@@ -132,26 +133,14 @@ class MessageContent extends StatelessWidget {
               linkColor: linkColor,
             );
           case MessageTypes.Location:
-            final geoUri = Uri.tryParse(
-              event.content.tryGet<String>('geo_uri')!,
-            );
-            if (geoUri != null && geoUri.scheme == 'geo') {
-              final latlong = geoUri.path
-                  .split(';')
-                  .first
-                  .split(',')
-                  .map(double.tryParse)
-                  .toList();
-              if (latlong.length == 2 &&
-                  latlong.first != null &&
-                  latlong.last != null) {
-                return MapBubble(
-                  onTap: () =>
-                      UrlLauncher(context, geoUri.toString()).launchUrl(),
-                  latitude: latlong.first!,
-                  longitude: latlong.last!,
-                );
-              }
+            final geoUriString = getLocationGeoUri(event.content);
+            final geoUri = GeoUri.tryParse(geoUriString);
+            if (geoUri != null) {
+              return MapBubble(
+                onTap: () => UrlLauncher(context, geoUriString).launchUrl(),
+                latitude: geoUri.latitude,
+                longitude: geoUri.longitude,
+              );
             }
             continue textmessage;
           case MessageTypes.Text:
