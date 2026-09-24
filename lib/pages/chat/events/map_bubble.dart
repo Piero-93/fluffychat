@@ -8,8 +8,10 @@ import 'package:fluffychat/widgets/avatar.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:matrix/matrix.dart';
 
 import '../../../config/app_config.dart';
+import '../../../utils/matrix_sdk_extensions/location_content.dart';
 import '../../../utils/platform_infos.dart';
 
 class MapBubble extends StatelessWidget {
@@ -66,7 +68,7 @@ class MapBubble extends StatelessWidget {
             Material(
               color: Colors.transparent,
               child: Tooltip(
-                message: L10n.of(context).openInMaps,
+                message: L10n.of(context).showLocation,
                 child: InkWell(onTap: onTap, child: SizedBox.expand()),
               ),
             ),
@@ -108,6 +110,44 @@ class OpenStreetMapAttribution extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The pin of a location event: the sender avatar for their own position and a
+/// plain pin for a shared place.
+class EventLocationPin extends StatelessWidget {
+  final Event event;
+
+  const EventLocationPin(this.event, {super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    if (getLocationAssetType(event.content) == LocationAssetTypes.pin) {
+      return const LocationPin();
+    }
+    final sender = event.senderFromMemoryOrFallback;
+    return LocationPin.avatar(
+      avatarUrl: sender.avatarUrl,
+      avatarName: sender.calcDisplayname(),
+    );
+  }
+}
+
+class OwnPositionMarker extends StatelessWidget {
+  static const double size = 20;
+
+  const OwnPositionMarker({super.key});
+
+  @override
+  Widget build(BuildContext context) => Container(
+    decoration: BoxDecoration(
+      shape: BoxShape.circle,
+      color: Theme.of(context).colorScheme.primary,
+      border: Border.all(color: Colors.white, width: 3),
+      boxShadow: const [
+        BoxShadow(color: Colors.black54, blurRadius: 4, offset: Offset(0, 2)),
+      ],
+    ),
+  );
 }
 
 class LocationPin extends StatelessWidget {
