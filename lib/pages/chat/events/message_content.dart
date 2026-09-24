@@ -10,6 +10,8 @@ import 'package:fluffychat/l10n/l10n.dart';
 import 'package:fluffychat/pages/chat/events/poll.dart';
 import 'package:fluffychat/pages/chat/events/video_player.dart';
 import 'package:fluffychat/pages/image_viewer/image_viewer.dart';
+import 'package:fluffychat/pages/location_viewer/location_viewer.dart';
+import 'package:fluffychat/utils/show_scaffold_dialog.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:matrix/matrix.dart';
 
@@ -136,19 +138,16 @@ class MessageContent extends StatelessWidget {
             final geoUriString = getLocationGeoUri(event.content);
             final geoUri = GeoUri.tryParse(geoUriString);
             if (geoUri != null) {
-              final sender = event.senderFromMemoryOrFallback;
               return MapBubble(
-                onTap: () => UrlLauncher(context, geoUriString).launchUrl(),
+                onTap: () => showScaffoldDialog(
+                  context: context,
+                  maxWidth: 800,
+                  maxHeight: 800,
+                  builder: (_) => LocationViewer(event, geoUri: geoUri),
+                ),
                 latitude: geoUri.latitude,
                 longitude: geoUri.longitude,
-                marker:
-                    getLocationAssetType(event.content) ==
-                        LocationAssetTypes.pin
-                    ? const LocationPin()
-                    : LocationPin.avatar(
-                        avatarUrl: sender.avatarUrl,
-                        avatarName: sender.calcDisplayname(),
-                      ),
+                marker: EventLocationPin(event),
               );
             }
             continue textmessage;

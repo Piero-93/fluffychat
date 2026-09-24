@@ -3,11 +3,10 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import 'dart:async';
-
 import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:fluffychat/l10n/l10n.dart';
 import 'package:fluffychat/pages/chat/events/map_bubble.dart';
+import 'package:fluffychat/utils/get_current_position.dart';
 import 'package:fluffychat/utils/matrix_sdk_extensions/location_content.dart';
 import 'package:fluffychat/widgets/adaptive_dialogs/adaptive_dialog_action.dart';
 import 'package:fluffychat/widgets/future_loading_dialog.dart';
@@ -52,41 +51,20 @@ class SendLocationDialogState extends State<SendLocationDialog> {
 
   Future<void> requestLocation() async {
     try {
-      if (!(await Geolocator.isLocationServiceEnabled())) {
-        setState(() => disabled = true);
-        return;
-      }
-      var permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          setState(() => denied = true);
-          return;
-        }
-      }
-      if (permission == LocationPermission.deniedForever) {
-        setState(() => denied = true);
-        return;
-      }
-      Position position;
-      try {
-        position = await Geolocator.getCurrentPosition(
-          locationSettings: const LocationSettings(
-            accuracy: LocationAccuracy.best,
-            timeLimit: Duration(seconds: 30),
-          ),
-        );
-      } on TimeoutException {
-        position = await Geolocator.getCurrentPosition(
-          locationSettings: const LocationSettings(
-            accuracy: LocationAccuracy.medium,
-            timeLimit: Duration(seconds: 30),
-          ),
-        );
-      }
+      final position = await getCurrentPosition();
       if (!mounted) return;
       setState(() => this.position = position);
       if (!pinMoved) moveToPosition();
+    } on LocationUnavailableException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        switch (e.reason) {
+          case LocationUnavailableReason.serviceDisabled:
+            disabled = true;
+          case LocationUnavailableReason.permissionDenied:
+            denied = true;
+        }
+      });
     } catch (e) {
       if (!mounted) return;
       setState(() => error = e);
