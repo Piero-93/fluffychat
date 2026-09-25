@@ -74,9 +74,14 @@ android {
         ndk { // Workaround for https://github.com/flutter/flutter/issues/162153#issuecomment-2612443642
             abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86_64", "x86")
         }
+        resValue("string", "app_name", "FluffyChat")
     }
 
     buildTypes {
+        debug {
+            applicationIdSuffix = ".debug"
+            resValue("string", "app_name", "FluffyChat debug")
+        }
         release {
             signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
