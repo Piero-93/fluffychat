@@ -109,4 +109,70 @@ void main() {
     expect(content[LocationContentKeys.asset], {'type': 'm.pin'});
     expect(content[LocationContentKeys.timestamp], 1636829458432);
   });
+
+  group('BeaconInfo.parse', () {
+    final eventTimestamp = DateTime.fromMillisecondsSinceEpoch(1636829458432);
+
+    test('reads live, timeout and the MSC3488 start', () {
+      final info = BeaconInfo.parse({
+        'live': true,
+        'timeout': 600000,
+        LocationContentKeys.timestamp: 1000,
+      }, originServerTs: eventTimestamp);
+      expect(info.live, true);
+      expect(info.timeout, const Duration(minutes: 10));
+      expect(info.start, DateTime.fromMillisecondsSinceEpoch(1000));
+      expect(info.end, DateTime.fromMillisecondsSinceEpoch(1000 + 600000));
+    });
+
+    test('falls back to the event timestamp without an MSC3488 start', () {
+      final info = BeaconInfo.parse({
+        'live': true,
+        'timeout': 600000,
+      }, originServerTs: eventTimestamp);
+      expect(info.start, eventTimestamp);
+    });
+
+    test('is not live without the key', () {
+      final info = BeaconInfo.parse({}, originServerTs: eventTimestamp);
+      expect(info.live, false);
+      expect(info.timeout, Duration.zero);
+    });
+
+    test('runs until the timeout is over', () {
+      final info = BeaconInfo.parse({
+        'live': true,
+        'timeout': 600000,
+        LocationContentKeys.timestamp: 1000,
+      }, originServerTs: eventTimestamp);
+      expect(info.isRunningAt(DateTime.fromMillisecondsSinceEpoch(2000)), true);
+      expect(
+        info.isRunningAt(DateTime.fromMillisecondsSinceEpoch(601001)),
+        false,
+      );
+    });
+
+    test('does not run when it is not live', () {
+      final info = BeaconInfo.parse({
+        'live': false,
+        'timeout': 600000,
+        LocationContentKeys.timestamp: 1000,
+      }, originServerTs: eventTimestamp);
+      expect(
+        info.isRunningAt(DateTime.fromMillisecondsSinceEpoch(2000)),
+        false,
+      );
+    });
+  });
+
+  test('a beacon carries its location as MSC3488 content', () {
+    expect(
+      getLocationGeoUri({
+        LocationContentKeys.location: {'uri': 'geo:51.5,-0.12'},
+        LocationContentKeys.timestamp: 1636829458432,
+        'm.relates_to': {'rel_type': 'm.reference', 'event_id': r'$beacon'},
+      }),
+      'geo:51.5,-0.12',
+    );
+  });
 }

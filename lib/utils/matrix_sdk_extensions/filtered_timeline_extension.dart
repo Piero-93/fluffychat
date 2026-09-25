@@ -4,6 +4,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import 'package:fluffychat/config/setting_keys.dart';
+import 'package:fluffychat/utils/matrix_sdk_extensions/location_content.dart';
 import 'package:matrix/matrix.dart';
 
 extension VisibleInGuiExtension on List<Event> {
@@ -53,5 +54,10 @@ extension IsStateExtension on Event {
 
   bool get isKnownHiddenStates =>
       {PollEventContent.responseType}.contains(type) ||
+      // the locations of a beacon are shown in the bubble of the beacon itself
+      BeaconEventTypes.beacon.contains(type) ||
+      // a beacon which is not live only turns a previous one off
+      (BeaconEventTypes.beaconInfo.contains(type) &&
+          content.tryGet<bool>('live') != true) ||
       type.startsWith('m.key.verification.');
 }
