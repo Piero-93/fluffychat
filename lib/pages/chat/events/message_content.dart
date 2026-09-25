@@ -24,6 +24,7 @@ import 'audio_player.dart';
 import 'cute_events.dart';
 import 'html_message.dart';
 import 'image_bubble.dart';
+import 'live_location_bubble.dart';
 import 'map_bubble.dart';
 import 'message_download_content.dart';
 
@@ -197,6 +198,8 @@ class MessageContent extends StatelessWidget {
               ),
             );
         }
+      case final String type when BeaconEventTypes.beaconInfo.contains(type):
+        return LiveLocationBubble(event, timeline: timeline);
       case PollEventContent.startType:
         if (event.redacted) {
           return RedactionWidget(

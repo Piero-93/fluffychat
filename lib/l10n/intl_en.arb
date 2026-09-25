@@ -2818,5 +2818,14 @@
     },
     "myLocation": "My location",
     "moveMapToChooseLocation": "Move the map to choose a location",
-    "showLocation": "Show location"
+    "showLocation": "Show location",
+    "liveLocation": "Live location",
+    "liveLocationEnded": "Live location ended",
+    "sharedALiveLocation": "{senderName} shared a live location",
+    "@sharedALiveLocation": {
+        "type": "String",
+        "placeholders": {
+            "senderName": {"type": "String"}
+        }
+    }
 }

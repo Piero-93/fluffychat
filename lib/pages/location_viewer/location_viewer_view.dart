@@ -7,6 +7,7 @@ import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:fluffychat/l10n/l10n.dart';
 import 'package:fluffychat/pages/chat/events/map_bubble.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:material_ui/material_ui.dart';
 
 import 'location_viewer.dart';
@@ -18,6 +19,7 @@ class LocationViewerView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final l10n = L10n.of(context);
     final ownLocation = controller.ownLocation;
     return Scaffold(
@@ -27,8 +29,19 @@ class LocationViewerView extends StatelessWidget {
           onPressed: Navigator.of(context).pop,
           tooltip: l10n.close,
         ),
-        title: Text(
-          controller.event.senderFromMemoryOrFallback.calcDisplayname(),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(controller.event.senderFromMemoryOrFallback.calcDisplayname()),
+            if (controller.isBeacon)
+              Text(
+                controller.isRunning
+                    ? l10n.liveLocation
+                    : l10n.liveLocationEnded,
+                style: theme.textTheme.bodySmall,
+              ),
+          ],
         ),
         actions: [
           IconButton(
@@ -45,6 +58,7 @@ class LocationViewerView extends StatelessWidget {
             options: MapOptions(
               initialCenter: controller.location,
               initialZoom: LocationViewerController.positionZoom,
+              onPositionChanged: controller.onPositionChanged,
             ),
             children: [
               const OpenStreetMapTileLayer(),
@@ -58,12 +72,24 @@ class LocationViewerView extends StatelessWidget {
                       height: OwnPositionMarker.size,
                       child: const OwnPositionMarker(),
                     ),
-                  Marker(
-                    point: controller.location,
-                    width: LocationPin.size,
-                    height: LocationPin.size,
-                    child: EventLocationPin(controller.event),
-                  ),
+                  if (controller.isBeacon)
+                    for (final beacon in controller.beacons)
+                      Marker(
+                        point: LatLng(
+                          beacon.geoUri.latitude,
+                          beacon.geoUri.longitude,
+                        ),
+                        width: LocationPin.size,
+                        height: LocationPin.size,
+                        child: EventLocationPin(beacon.event),
+                      )
+                  else
+                    Marker(
+                      point: controller.location,
+                      width: LocationPin.size,
+                      height: LocationPin.size,
+                      child: EventLocationPin(controller.event),
+                    ),
                 ],
               ),
             ],
@@ -86,7 +112,9 @@ class LocationViewerView extends StatelessWidget {
                 const SizedBox(height: 8),
                 IconButton.filledTonal(
                   tooltip: l10n.showLocation,
-                  onPressed: controller.moveToLocation,
+                  onPressed: controller.followsLocation
+                      ? null
+                      : controller.moveToLocation,
                   icon: const Icon(Icons.location_pin),
                 ),
               ],
