@@ -85,7 +85,11 @@ class _LiveLocationBubbleState extends State<LiveLocationBubble> {
           MapBubble(
             onTap: () => showDialog(
               context: context,
-              builder: (_) => LocationViewer(beacon!, geoUri: geoUri),
+              builder: (_) => LocationViewer.beacon(
+                event,
+                geoUri: geoUri,
+                timeline: widget.timeline,
+              ),
             ),
             latitude: geoUri.latitude,
             longitude: geoUri.longitude,

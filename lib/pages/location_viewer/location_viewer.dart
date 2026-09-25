@@ -3,6 +3,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+import 'dart:async';
+
 import 'package:fluffychat/l10n/l10n.dart';
 import 'package:fluffychat/pages/location_viewer/location_viewer_view.dart';
 import 'package:fluffychat/utils/get_current_position.dart';
@@ -16,9 +18,23 @@ import 'package:matrix/matrix.dart';
 
 class LocationViewer extends StatefulWidget {
   final Event event;
-  final GeoUri geoUri;
+  final GeoUri initialGeoUri;
 
-  const LocationViewer(this.event, {required this.geoUri, super.key});
+  /// Set for a beacon, whose location keeps coming in while it is shared.
+  final Timeline? timeline;
+
+  const LocationViewer(this.event, {required GeoUri geoUri, super.key})
+    : initialGeoUri = geoUri,
+      timeline = null;
+
+  const LocationViewer.beacon(
+    this.event, {
+    required GeoUri geoUri,
+    required Timeline this.timeline,
+    super.key,
+  }) : initialGeoUri = geoUri;
+
+  bool get isBeacon => timeline != null;
 
   @override
   LocationViewerController createState() => LocationViewerController();
@@ -28,13 +44,23 @@ class LocationViewerController extends State<LocationViewer> {
   static const double positionZoom = 16;
 
   final MapController mapController = MapController();
+  late GeoUri geoUri = widget.initialGeoUri;
   Position? ownPosition;
   bool isLocating = false;
 
+  /// While the map follows the beacon, until the user drags it away.
+  bool followsLocation = true;
+
+  StreamSubscription<Event>? _beaconSubscription;
+  Timer? _endTimer;
+
   Event get event => widget.event;
 
-  LatLng get location =>
-      LatLng(widget.geoUri.latitude, widget.geoUri.longitude);
+  bool get isBeacon => widget.isBeacon;
+
+  bool get isRunning => isBeacon && event.isBeaconRunningAt(DateTime.now());
+
+  LatLng get location => LatLng(geoUri.latitude, geoUri.longitude);
 
   LatLng? get ownLocation {
     final ownPosition = this.ownPosition;
@@ -44,12 +70,54 @@ class LocationViewerController extends State<LocationViewer> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    if (!isBeacon) return;
+    _beaconSubscription = event.room.client.onTimelineEvent.stream.listen(
+      _onTimelineEvent,
+    );
+    _scheduleEnd();
+  }
+
+  @override
   void dispose() {
+    _beaconSubscription?.cancel();
+    _endTimer?.cancel();
     mapController.dispose();
     super.dispose();
   }
 
-  void moveToLocation() => mapController.move(location, positionZoom);
+  void _scheduleEnd() {
+    final info = BeaconInfo.parse(
+      event.content,
+      originServerTs: event.originServerTs,
+    );
+    final remaining = info.end.difference(DateTime.now());
+    if (!info.live || remaining.isNegative) return;
+    _endTimer = Timer(remaining, () {
+      if (mounted) setState(() {});
+    });
+  }
+
+  void _onTimelineEvent(Event beacon) {
+    if (beacon.room.id != event.room.id) return;
+    if (!BeaconEventTypes.beacon.contains(beacon.type)) return;
+    if (beacon.senderId != event.senderId) return;
+    if (beacon.relationshipEventId != event.eventId) return;
+    final geoUri = GeoUri.tryParse(getLocationGeoUri(beacon.content));
+    if (geoUri == null) return;
+    setState(() => this.geoUri = geoUri);
+    if (followsLocation) mapController.move(location, positionZoom);
+  }
+
+  void onPositionChanged(MapCamera camera, bool hasGesture) {
+    if (hasGesture && followsLocation) setState(() => followsLocation = false);
+  }
+
+  void moveToLocation() {
+    mapController.move(location, positionZoom);
+    if (!followsLocation) setState(() => followsLocation = true);
+  }
 
   Future<void> moveToOwnPosition() async {
     final ownLocation = this.ownLocation;
@@ -89,7 +157,7 @@ class LocationViewerController extends State<LocationViewer> {
   }
 
   void openInMapsAction() =>
-      UrlLauncher(context, widget.geoUri.toString()).launchUrl();
+      UrlLauncher(context, geoUri.toString()).launchUrl();
 
   @override
   Widget build(BuildContext context) => LocationViewerView(this);
